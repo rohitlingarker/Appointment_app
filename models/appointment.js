@@ -16,58 +16,64 @@ module.exports = (sequelize, DataTypes) => {
 
     static async getAppointments(){
       return await Appointment.findAll({
-        order:[["startTime","ASC"]]
+        order:[["date","ASC"],["startTime","ASC"]]
       })
     }
 
     static async newAppointment({eventName,description,date,startTime,endTime}){
       const appointments = await Appointment.findAll({
         where: {
+          date:date,
           [Op.not]:[
-            {
-              [Op.or]:[
-                {
-                  [Op.or]:[
-                    {
-                    endTime:{[Op.lte]:startTime}
-                    },
-                    {
-                      [Op.and]:[
-                        {
-                          endTime:{[Op.gt]:startTime}
-                        },
-                        {
-                          startTime:{[Op.gte]:endTime}
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  [Op.or]:[
-                    {
-                      startTime:{[Op.gte]:endTime}
-                    },
-                    {
-                      [Op.and]:[
-                        {
-                          startTime:{[Op.lt]:endTime}
-                        },
-                        {
-                          endTime:{[Op.lte]:startTime}
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            
+              {
+                [Op.or]:[
+                  {
+                    [Op.or]:[
+                      {
+                      endTime:{[Op.lte]:startTime}
+                      },
+                      {
+                        [Op.and]:[
+                          {
+                            endTime:{[Op.gt]:startTime}
+                          },
+                          {
+                            startTime:{[Op.gte]:endTime}
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    [Op.or]:[
+                      {
+                        startTime:{[Op.gte]:endTime}
+                      },
+                      {
+                        [Op.and]:[
+                          {
+                            startTime:{[Op.lt]:endTime}
+                          },
+                          {
+                            endTime:{[Op.lte]:startTime}
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         },
-      });
+      );
       console.log(appointments);
       if(appointments.length){
-        return appointments
+        throw new Error(JSON.stringify(appointments))
+      }
+      if(startTime>endTime){
+        return false
       }
       return await Appointment.create({
         eventName,

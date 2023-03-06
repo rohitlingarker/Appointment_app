@@ -6,51 +6,217 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
+  <% function convertTime(time24) {
+    let [hours, minutes] = time24.split(':');
+    let suffix = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${suffix}`;
+  } %>
 </head>
 <body>
-    <!-- views/appointments/index.ejs -->
-<header>
-  <h1 class="text-4xl font-bold mb-4 m-4">Appointments</h1>
-  <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">New</button>
+<header class="flex justify-between">
+  <h1 id="title" class="text-4xl font-bold mb-4 m-4">Appointments</h1>
+  <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-0 px-10 mx-10 my-4 rounded" onclick="newBtn()" id="new">New</button>
 </header>
+<div id="newForm" class="w-full flex justify-evenly  hidden ">
+  <form id="form" class="flex justify-between my-4 align-middle	border-2 border-green-500 rounded w-full m-3 py-4 px-2" action="/new-appointment" method="post">
+    <label class="font-bold " for="eventName"> Event Name:    <input type="text" class="border-2 border-gray accent-emerald-500	py-1 px-4" onload="afterload()" name="eventName" id="eventName" required> </label>
+    <label class="font-bold " for="description"> Description: <input type="text" class="border-2 border-gray accent-emerald-500	py-1 px-4" onload="afterload()" name="description" id="description"  ></label>
+    <label class="font-bold " for="date">Date:                <input type="date" class="border-2 border-gray accent-emerald-500	py-1 px-4" onload="afterload()" name="date" id="date" required></label>
+    <label class="font-bold " for="startTime">Start-Time:     <input type="time" class="border-2 border-gray accent-emerald-500	py-1 px-4" onload="afterload()" name="startTime" id="startTime" required></label>
+    <label class="font-bold " for="endTime">End-Time:         <input type="time" class="border-2 border-gray accent-emerald-500	py-1 px-4" onload="afterload()" name="endTime" id="endTime" required></label>
+    <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-4 rounded" onclick="storeSubmit()" >Create</button>
+  </form>
+</div>
+<% if(messages && messages.error && messages.error.length > 0)  { %>
+  <div>
+    <li class="text-gray-600 py-2 pl-4 bg-red-100 border-l-4 border-gray-500 rounded list-none">
+      Given timings are overlapping with following events! 
+    </li>
+    <button class="bg-red-700 px-4 py-1 m-4 text-center text-white rounded" onclick="overlapDelete()">
+      Click here to Delete All Overlapping Appointments and Save the current appointment
+    </button>
+  </div>
+  <% } %>
+  <% if(messages && messages.success && messages.success.length > 0)  { %>
+    <% for(var i=0; i<messages.success.length; i++) { %>
+            <li class="text-gray-600 py-2 pl-4 bg-red-100 border-l-4 border-gray-500 rounded list-none"><%= messages.success[i] %></li>
+    <% } %>
+  <% } %>
+
 <div class="flex justify-center w-full ">
   <table class="table-fixed w-5/6">
     <thead>
       <tr>
         <th class="shadow border-2 bg-yellow-300 px-4 py-2">Event Name</th>
+        <th class="shadow border-2 bg-yellow-300 px-4 py-2">Description</th>
         <th class="shadow border-2 bg-yellow-300 px-4 py-2">Date</th>
         <th class="shadow border-2 bg-yellow-300 px-4 py-2">Start Time</th>
         <th class="shadow border-2 bg-yellow-300 px-4 py-2">End Time</th>
-        <th class="shadow border-2 bg-yellow-300 px-4 py-2">Description</th>
         <th class="shadow border-2 bg-yellow-300 px-4 py-2">Actions</th>
       </tr>
     </thead>
     <tbody>
       <% for(let i=0;i<appointments.length;i++){ %>
-        <tr>
-          <td class="border text-center px-4 py-2"><%= appointments[i].eventName %></td>
+        <tr id="<%= appointments[i].id %>">
+          <td class="border text-center px-4 py-2" id="e<%= appointments[i].id %>"><%= appointments[i].eventName %></td>
+          <td class="border text-center px-4 py-2" id="d<%= appointments[i].id %>"><%= appointments[i].description %></td>
           <td class="border text-center px-4 py-2"><%= appointments[i].date%></td>
-          <td class="border text-center px-4 py-2"><%= appointments[i].startTime %></td>
-          <td class="border text-center px-4 py-2"><%= appointments[i].endTime %></td>
-          <td class="border text-center px-4 py-2"><%= appointments[i].description %></td>
+          <td class="border text-center px-4 py-2"><%= convertTime(appointments[i].startTime )%></td>
+          <td class="border text-center px-4 py-2"><%=convertTime( appointments[i].endTime) %></td>
           <td class="border text-center px-4 py-2 flex justify-evenly">
-            <form method="POST" action="/appointments/<%= appointments[i]._id %>?_method=DELETE">
-              <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                Delete
-              </button>
-            </form>
-            <a href="/appointments/<%= appointments[i]._id %>/edit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+
+            <button onclick="handleDelete(<%=appointments[i].id%>)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+              Delete
+            </button>
+            <button id="b<%=appointments[i].id%>" onclick="handleEdit(<%=appointments[i].id%>)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
               Edit
-            </a>
+            </button>
           </td>
         </tr>
         <% } %>
       </tbody>
     </table>
   </div>
+
+  <% if(messages && messages.error && messages.error.length > 0)  { %>
+    <% for(var i=0; i<messages.error.length; i++) { %>
+      <script>
+        document.getElementById(<%=messages.error[i]%>).classList.add("bg-red-600","text-white") %>
+      </script>
+    <% } %>
+  <% } %>
     
+  <script>
     
+
+    function storeSubmit(){
+      form = document.getElementById("form");
+      if(document.getElementById("startTime").value>document.getElementById("endTime").value){
+        event.preventDefault()
+        alert("Time slot Start time must be before the End time")
+      }
+      setCookie("eventName",document.getElementById("eventName").value,1)
+      setCookie("description",document.getElementById("description").value,1)
+      setCookie("date",document.getElementById("date").value,1)
+      setCookie("startTime",document.getElementById("startTime").value,1)
+      setCookie("endTime",document.getElementById("endTime").value,1)
+      form.submit()
+    }
+    
+    window.addEventListener("load", (event) => {
+
+      document.getElementById("eventName").value=getCookie("eventName")
+      document.getElementById("description").value=getCookie("description")
+      document.getElementById("date").value=getCookie("date")
+      document.getElementById("startTime").value=getCookie("startTime")
+      document.getElementById("endTime").value=getCookie("endTime")
+
+    });
+    function overlapDelete(){
+      overlappingAppointments = document.getElementsByClassName("bg-red-600")
+      overlappingIds = []
+      for(let i=0;i<overlappingAppointments.length;i++){
+        overlappingIds.push(overlappingAppointments[i].id)
+      }
+      fetch(`/md`,{
+        method:"delete",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          overlappingIds
+        })
+      }).then((res)=>{
+        console.log(res);
+        if (res.status===200){
+          window.location.reload()
+        }
+      }).catch((error)=>{
+        console.log(error);
+      })
+      document.getElementById("form").submit();
+    }
+    
+    function newBtn(){
+      newBt=document.getElementById("new");
+      newBt.classList.add("hidden")
+      newForm = document.getElementById("newForm");
+      newForm.classList.remove("hidden")
+    }
+    function handleDelete(id){
+      console.log(id);
+      fetch(`/${id}`,{
+        method:"delete",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          id:id
+        })
+      }).then((res)=>{
+        console.log(res);
+        if (res.status===200){
+          window.location.reload()
+        }
+      }).catch((error)=>{
+        console.log(error);
+      })
+    }
+    function handleEdit(id){
+
+      btn=document.getElementById(`b${id}`);
+      evName=document.getElementById(`e${id}`);
+      desc=document.getElementById(`d${id}`);
+      if (btn.innerText==="Edit"){
+        evName.contentEditable=true;
+        desc.contentEditable=true;
+        evName.classList.add("border-black");
+        desc.classList.add("border-black");
+        evName.focus()
+        btn.innerText="Save"
+        return
+      }else{
+        evNam = evName.innerText;
+        des = desc.innerText;
+        fetch(`/${id}`,{
+          method:"put",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            eventName:evNam,
+            description:des
+          })
+        }).then((res)=>{
+          console.log(res);
+          if (res.status===200){
+            window.location.reload()
+          }
+        }).catch((error)=>{
+          console.log(error);
+        })
+      }
+    }
+
+    function setCookie(cname, cvalue, exdays) {
+      const d = new Date();
+      d.setTime(d.getTime() + (exdays*24*60*60*1000));
+      let expires = "expires="+ d.toUTCString();
+      document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
+
+    function getCookie(cname) {
+      let name = cname + "=";
+      let decodedCookie = decodeURIComponent(document.cookie);
+      let ca = decodedCookie.split(';');
+      for(let i = 0; i <ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      return "";
+    }
+
+  </script>
 
 </body>
 </html>
