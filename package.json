@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon -e js,ejs,css",
+    "dev": "nodemon -e js,ejs,css",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "appointment_app": "file:",
     "connect-flash": "^0.1.1",
     "ejs": "^3.1.8",
     "express": "^4.18.2",
